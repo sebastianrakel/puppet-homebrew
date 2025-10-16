@@ -1,6 +1,6 @@
 class homebrew::install {
-
-  case $::facts[processors][models][0] {
+  $processor_arch = $facts['processors']['models'][0]
+  case $processor_arch {
     # brew complains if it finds its bin in /usr/local/bin on Apple Silicon
     # so we should put brew where it expects to be
     /^Apple*/: {
@@ -15,9 +15,10 @@ class homebrew::install {
       $link_bin           = true
       $brew_folders_extra = ["${brew_root}/Homebrew",]
     }
-    default:   { fail("unknown arch for processor ${::facts[processors][models][0]}") }
+    default:   { fail("unknown arch for processor ${processor_arch}") }
   }
   $brew_sys_folders = [
+    "${brew_root}",
     "${brew_root}/bin",
     "${brew_root}/etc",
     "${brew_root}/Frameworks",

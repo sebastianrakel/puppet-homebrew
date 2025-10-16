@@ -40,15 +40,18 @@ Puppet::Type.type(:package).provide(:brew, :parent => Puppet::Provider::Package)
       gid = nil
     end
 
+    Puppet.debug "Running command as #{uid}/#{gid} #{cmd}"
     if Puppet.features.bundled_environment?
       Bundler.with_clean_env do
-        super(cmd, :uid => uid, :gid => gid, :combine => combine,
-              :custom_environment => { 'HOME' => home }, :failonfail => failonfail)
+        output = super(cmd, :uid => uid, :gid => gid, :combine => combine,
+                       :custom_environment => { 'HOME' => home }, :failonfail => failonfail)
       end
     else
-      super(cmd, :uid => uid, :gid => gid, :combine => combine,
-            :custom_environment => { 'HOME' => home }, :failonfail => failonfail)
+      output = super(cmd, :uid => uid, :gid => gid, :combine => combine,
+                     :custom_environment => { 'HOME' => home }, :failonfail => failonfail)
     end
+    Puppet.debug "Command Output: #{output}"
+    return output
   end
 
   def self.instances(justme = false)
@@ -58,7 +61,8 @@ Puppet::Type.type(:package).provide(:brew, :parent => Puppet::Provider::Package)
   def execute(*args)
     # This does not return exit codes in puppet <3.4.0
     # See https://projects.puppetlabs.com/issues/2538
-    self.class.execute(*args)
+    output = self.class.execute(*args)
+    Puppet.debug "Execute Result: #{output}"
   end
 
   def fix_checksum(files)
@@ -108,9 +112,9 @@ Puppet::Type.type(:package).provide(:brew, :parent => Puppet::Provider::Package)
   def install
     begin
       Puppet.debug "Looking for #{install_name} package..."
-      execute([command(:brew), :info, install_name], :failonfail => true)
+      execute([command(:brew), :info, install_name], :failonfail => false)
     rescue Puppet::ExecutionFailure => detail
-      raise Puppet::Error, "Could not find package: #{install_name}"
+      raise Puppet::Error, "Could not find package: #{install_name} #{detail}"
     end
 
     begin
